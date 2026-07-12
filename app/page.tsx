@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { RouteResult } from "@/types/ticket";
 import { ResultCard } from "@/components/result-card";
+import { classifyTicket } from "@/lib/api";
 
 // A few sample tickets so the page is easy to demo / try.
 const EXAMPLES = [
@@ -27,17 +28,11 @@ export default function Home() {
     setResult(null);
 
     try {
-      // MOCK for Phase 10 — Phase 11 replaces this with a real fetch().
-      await new Promise((r) => setTimeout(r, 1000));
-      setResult({
-        category: "Billing",
-        priority: "High",
-        assigned_team: "Billing",
-        reasoning: "Mock result — backend not connected yet (Phase 11).",
-        processing_time_ms: 1000,
-      });
+      // Real call to the FastAPI backend.
+      const data = await classifyTicket(text);
+      setResult(data);
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError("Couldn't reach the classifier. Is the backend running?");
     } finally {
       setLoading(false);
     }
