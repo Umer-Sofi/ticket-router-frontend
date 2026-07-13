@@ -11,8 +11,14 @@ ticket, clicks **Classify**, and sees its category, priority, and assigned team.
 
 ## Screenshots
 
-<!-- Add a screenshot: save it to public/screenshot.png, then it shows below -->
-![Smart Ticket Router UI](public/screenshot.png)
+### Dashboard
+![Dashboard](public/dashboard.png)
+
+### History
+![History](public/history.png)
+
+### Analytics
+![Analytics](public/analytics.png)
 
 ---
 
