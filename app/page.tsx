@@ -76,6 +76,7 @@ export default function Home() {
             onChange={(e) => setText(e.target.value)}
             placeholder="Paste the customer's message here…"
             rows={5}
+            maxLength={5000}
             className="mt-2 w-full resize-y rounded-lg border border-zinc-300 bg-white p-3 text-sm text-zinc-900 outline-none transition-colors focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
           />
 
