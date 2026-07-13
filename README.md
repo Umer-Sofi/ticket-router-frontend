@@ -1,36 +1,91 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Smart Ticket Router — Frontend
 
-## Getting Started
+The web UI for the AI-powered ticket triage system. Built with **Next.js**,
+**TypeScript**, **Tailwind CSS**, and **shadcn/ui**. A user pastes a support
+ticket, clicks **Classify**, and sees its category, priority, and assigned team.
 
-First, run the development server:
+> Backend (FastAPI) lives in a separate repo: **ticket-router-backend**.
+> The frontend calls it over REST — start the backend first.
+
+---
+
+## Screenshots
+
+<!-- Add a screenshot: save it to public/screenshot.png, then it shows below -->
+![Smart Ticket Router UI](public/screenshot.png)
+
+---
+
+## Setup
+
+**Requirements:** Node.js 18+
 
 ```bash
+# 1. install dependencies
+npm install
+
+# 2. point the app at your backend (see Environment variables)
+echo "NEXT_PUBLIC_API_URL=http://localhost:8000" > .env.local
+
+# 3. run the dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open **http://localhost:3000**. (The backend must be running on port 8000.)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Environment variables
 
-## Learn More
+Create `.env.local` (git-ignored — never commit it):
 
-To learn more about Next.js, take a look at the following resources:
+| Variable | Required | Example | Description |
+|----------|----------|---------|-------------|
+| `NEXT_PUBLIC_API_URL` | ✅ | `http://localhost:8000` | Base URL of the backend API. `NEXT_PUBLIC_` makes it available in the browser. |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+For production, set this to your deployed backend URL (e.g. the Render URL).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## How it works
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. `app/page.tsx` holds the UI state (input, loading, result, error).
+2. On submit, it calls `classifyTicket()` in `lib/api.ts`.
+3. `lib/api.ts` sends `POST {NEXT_PUBLIC_API_URL}/api/route-ticket` with `{ text }`.
+4. The returned `RouteResult` is rendered by `components/result-card.tsx`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The UI handles all states: idle, loading (spinner + disabled button), success
+(result card), and error (alert).
+
+---
+
+## Folder structure
+
+```
+app/
+  page.tsx           main page — state + layout
+  layout.tsx         root layout
+components/
+  result-card.tsx    displays a classification result
+  priority-badge.tsx colored High/Medium/Low badge
+  ui/                shadcn components
+lib/
+  api.ts             backend API client (fetch)
+types/
+  ticket.ts          TypeScript types mirroring the backend contract
+```
+
+---
+
+## Deployment
+
+Deploy to **Vercel**. Set `NEXT_PUBLIC_API_URL` to your live backend URL in the
+Vercel project's environment variables.
+
+---
+
+## Future work
+
+- Ticket history (localStorage or backend-persisted)
+- Analytics dashboard with real aggregated data
+- Confidence score & token/cost display

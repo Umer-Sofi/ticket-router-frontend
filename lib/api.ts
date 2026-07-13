@@ -4,7 +4,6 @@
 import { RouteResult } from "@/types/ticket";
 
 // Backend base URL. Comes from .env.local (NEXT_PUBLIC_ = visible to browser).
-// Falls back to localhost so it works even if the env var is missing in dev.
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export async function classifyTicket(text: string): Promise<RouteResult> {
@@ -20,4 +19,14 @@ export async function classifyTicket(text: string): Promise<RouteResult> {
   }
 
   return res.json() as Promise<RouteResult>;
+}
+
+// Ping the backend's /health endpoint. Used for the "API Status" indicator.
+export async function checkHealth(): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_URL}/health`, { cache: "no-store" });
+    return res.ok;
+  } catch {
+    return false;
+  }
 }

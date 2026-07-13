@@ -1,22 +1,37 @@
-"use client"; // needed: this component uses state + event handlers (runs in the browser)
+"use client";
 
-import { useState } from "react";
-import { RouteResult } from "@/types/ticket";
-import { ResultCard } from "@/components/result-card";
-import { classifyTicket } from "@/lib/api";
+import { useEffect, useState } from "react";
+import { CheckCircle2, Circle, Inbox } from "lucide-react";
+import { RouteResult, HistoryItem } from "@/types/ticket";
+import { classifyTicket, checkHealth } from "@/lib/api";
+import { loadHistory, addHistory, clearHistory } from "@/lib/history";
+import { usePipeline } from "@/hooks/usePipeline";
+import { Sidebar } from "@/components/sidebar";
+import { InputPanel } from "@/components/input-panel";
+import { ResultPanel } from "@/components/result-panel";
+import { Pipeline } from "@/components/pipeline/Pipeline";
+import { HistoryPanel } from "@/components/history-panel";
+import { AnalyticsPanel } from "@/components/analytics-panel";
 
-// A few sample tickets so the page is easy to demo / try.
-const EXAMPLES = [
-  "I was charged twice for my subscription this month.",
-  "Someone logged into my account from another country.",
-  "Please add a dark mode to the dashboard.",
-];
+const TECH = ["GPT-4o-mini", "FastAPI", "Next.js", "Pydantic"];
 
 export default function Home() {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<RouteResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [online, setOnline] = useState<boolean | null>(null);
+  const [pipelineActive, setPipelineActive] = useState(false);
+  const pipeline = usePipeline();
+
+  // Load history + check backend health on mount (and poll health).
+  useEffect(() => {
+    setHistory(loadHistory());
+    checkHealth().then(setOnline);
+    const id = setInterval(() => checkHealth().then(setOnline), 20000);
+    return () => clearInterval(id);
+  }, []);
 
   async function handleSubmit() {
     if (!text.trim()) {
@@ -27,11 +42,22 @@ export default function Home() {
     setError(null);
     setResult(null);
 
+    // Show the animated pipeline and start the simulated progress.
+    setPipelineActive(true);
+    pipeline.reset();
+    pipeline.startSimulation();
+
     try {
-      // Real call to the FastAPI backend.
       const data = await classifyTicket(text);
+      // API returned: jump the pipeline to completion (real total time).
+      pipeline.complete(data.processing_time_ms);
+      // Brief pause so the "complete" state shows, then reveal the result card.
+      // The pipeline stays visible below (it does NOT fade out).
+      await new Promise((r) => setTimeout(r, 500));
       setResult(data);
+      setHistory(addHistory(text, data));
     } catch {
+      pipeline.fail();
       setError("Couldn't reach the classifier. Is the backend running?");
     } finally {
       setLoading(false);
@@ -39,84 +65,95 @@ export default function Home() {
   }
 
   return (
-    <div className="relative min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      {/* Soft decorative glow behind the header (purely visual) */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-indigo-500/10 blur-3xl dark:bg-indigo-500/10"
-      />
+    <div id="top" className="flex min-h-screen bg-zinc-50 dark:bg-zinc-950">
+      <Sidebar />
 
-      <main className="relative mx-auto flex max-w-2xl flex-col gap-8 px-4 py-16">
-        {/* Header */}
-        <header className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-600 text-lg font-bold text-white shadow-sm">
-            ⇄
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-              Smart Ticket Router
-            </h1>
-            <p className="text-sm text-zinc-500">
-              AI-powered triage — category, priority & team in one click.
-            </p>
-          </div>
-        </header>
+      <main className="flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-6xl space-y-6 p-6">
+          {/* Header */}
+          <header className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+                Smart Ticket Router
+              </h1>
+              <p className="text-sm text-zinc-500">
+                AI-Powered Support Ticket Classification
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {TECH.map((t) => (
+                  <span
+                    key={t}
+                    className="rounded-full border border-zinc-200 bg-white px-2.5 py-0.5 text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
 
-        {/* Input card */}
-        <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <label
-            htmlFor="ticket"
-            className="text-xs font-medium uppercase tracking-wide text-zinc-500"
-          >
-            Support ticket
-          </label>
-          <textarea
-            id="ticket"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Paste the customer's message here…"
-            rows={5}
-            maxLength={5000}
-            className="mt-2 w-full resize-y rounded-lg border border-zinc-300 bg-white p-3 text-sm text-zinc-900 outline-none transition-colors focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
-          />
-
-          {/* Example chips */}
-          <div className="mt-3 flex flex-wrap gap-2">
-            {EXAMPLES.map((ex) => (
-              <button
-                key={ex}
-                onClick={() => setText(ex)}
-                className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs text-zinc-600 transition-colors hover:border-indigo-300 hover:text-indigo-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-              >
-                {ex.length > 34 ? ex.slice(0, 34) + "…" : ex}
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-4 flex items-center justify-between">
-            <span className="text-xs text-zinc-400">{text.length} characters</span>
-            <button
-              onClick={handleSubmit}
-              disabled={loading}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {loading && (
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            {/* API status (real: pings /health) */}
+            <div className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs dark:border-zinc-800 dark:bg-zinc-900">
+              {online == null ? (
+                <Circle className="h-3.5 w-3.5 text-zinc-400" />
+              ) : online ? (
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+              ) : (
+                <Circle className="h-3.5 w-3.5 fill-red-500 text-red-500" />
               )}
-              {loading ? "Classifying…" : "Classify Ticket"}
-            </button>
-          </div>
-        </section>
+              <span className="text-zinc-500">API</span>
+              <span
+                className={
+                  online ? "font-semibold text-emerald-600" : "font-semibold text-red-600"
+                }
+              >
+                {online == null ? "…" : online ? "Connected" : "Offline"}
+              </span>
+            </div>
+          </header>
 
-        {/* Error state */}
-        {error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
-            {error}
-          </div>
-        )}
+          {error && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+              {error}
+            </div>
+          )}
 
-        {/* Success state */}
-        {result && <ResultCard result={result} />}
+          {/* Top: input (left) + work area (right) */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <InputPanel
+              text={text}
+              setText={setText}
+              onSubmit={handleSubmit}
+              loading={loading}
+            />
+
+            {/* Right work area: pipeline sits JUST ABOVE the result */}
+            <div className="flex flex-col gap-6 lg:col-span-2">
+              {pipelineActive && <Pipeline controller={pipeline} />}
+
+              {result ? (
+                <ResultPanel result={result} />
+              ) : (
+                <section className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-300 bg-white p-8 text-center dark:border-zinc-700 dark:bg-zinc-900">
+                  <Inbox className="h-8 w-8 text-zinc-300" />
+                  <p className="mt-2 text-sm text-zinc-400">
+                    {loading
+                      ? "Processing… see the pipeline above."
+                      : "Classify a ticket to see the result here."}
+                  </p>
+                </section>
+              )}
+            </div>
+          </div>
+
+          {/* Bottom: history + analytics, full width */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <HistoryPanel
+              history={history}
+              onClear={() => setHistory(clearHistory())}
+            />
+            <AnalyticsPanel history={history} />
+          </div>
+        </div>
       </main>
     </div>
   );
