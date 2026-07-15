@@ -69,12 +69,6 @@ export default function HistoryPage() {
                 </p>
                 <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-400">
                   <span>Team: {item.result.assigned_team}</span>
-                  {item.result.total_tokens != null && (
-                    <span>{item.result.total_tokens} tokens</span>
-                  )}
-                  {item.result.cost_usd != null && (
-                    <span>${item.result.cost_usd.toFixed(5)}</span>
-                  )}
                   {item.result.processing_time_ms != null && (
                     <span>{item.result.processing_time_ms} ms</span>
                   )}

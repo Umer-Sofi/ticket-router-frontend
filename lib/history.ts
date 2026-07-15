@@ -16,14 +16,28 @@ export function loadHistory(): HistoryItem[] {
   }
 }
 
-export function addHistory(text: string, result: RouteResult): HistoryItem[] {
-  const item: HistoryItem = {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    text,
-    result,
-    at: Date.now(),
-  };
-  const next = [item, ...loadHistory()].slice(0, MAX_ITEMS);
+// Save every ticket found in one message as its own history item, so History
+// and Analytics count tickets (not messages). `processingMs` is the request
+// round-trip measured in the browser; we tag each ticket from this message
+// with it so Analytics can show an average response time.
+export function addClassification(
+  fallbackText: string,
+  tickets: RouteResult[],
+  processingMs: number | null,
+): HistoryItem[] {
+  const now = Date.now();
+
+  const items: HistoryItem[] = tickets.map((ticket, i) => ({
+    id: `${now}-${i}-${Math.random().toString(36).slice(2, 8)}`,
+    text: ticket.text ?? fallbackText,
+    result: {
+      ...ticket,
+      processing_time_ms: processingMs,
+    },
+    at: now,
+  }));
+
+  const next = [...items, ...loadHistory()].slice(0, MAX_ITEMS);
   localStorage.setItem(KEY, JSON.stringify(next));
   return next;
 }

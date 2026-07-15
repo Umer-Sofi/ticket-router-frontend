@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LucideIcon, Ticket, ArrowUp, Clock, DollarSign, BarChart3 } from "lucide-react";
+import { LucideIcon, Ticket, ArrowUp, Clock, BarChart3 } from "lucide-react";
 import { HistoryItem, Priority } from "@/types/ticket";
 import { loadHistory } from "@/lib/history";
 import { categoryDistribution } from "@/lib/categories";
@@ -51,7 +51,6 @@ export default function AnalyticsPage() {
   const avgMs = timed.length
     ? Math.round(timed.reduce((a, b) => a + b, 0) / timed.length)
     : null;
-  const totalCost = history.reduce((a, h) => a + (h.result.cost_usd ?? 0), 0);
 
   const priorityCounts: Record<Priority, number> = {
     High: history.filter((h) => h.result.priority === "High").length,
@@ -85,11 +84,10 @@ export default function AnalyticsPage() {
   return (
     <div className="space-y-6">
       {/* Stat tiles */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatTile icon={Ticket} label="Total Tickets" value={String(total)} />
         <StatTile icon={ArrowUp} label="High Priority" value={String(highCount)} />
         <StatTile icon={Clock} label="Avg Response" value={avgMs != null ? `${avgMs} ms` : "—"} />
-        <StatTile icon={DollarSign} label="Total Cost" value={`$${totalCost.toFixed(4)}`} />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

@@ -9,6 +9,7 @@ const EXAMPLES = [
   "Someone logged into my account from another country.",
   "Please add a dark mode to the dashboard.",
   "How do I change my email address?",
+  "I was charged twice this month, and I also can't log in — it says my password is wrong. Also, could you add CSV export?",
 ];
 
 export function InputPanel({

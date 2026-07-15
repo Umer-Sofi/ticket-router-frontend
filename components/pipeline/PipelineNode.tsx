@@ -75,11 +75,8 @@ export function PipelineNode({ stage }: { stage: StageRuntime }) {
       {/* Status line */}
       <div className="flex min-h-[20px] items-center justify-center sm:min-h-[30px]">
         {isDone ? (
-          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400 sm:text-[11px]">
-            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-white">
-              <Check className="h-2.5 w-2.5" />
-            </span>
-            {stage.elapsedMs != null ? `${stage.elapsedMs} ms` : "Done"}
+          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-white">
+            <Check className="h-2.5 w-2.5" />
           </span>
         ) : isError ? (
           <span className="flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white">

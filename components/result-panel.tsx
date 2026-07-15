@@ -1,34 +1,30 @@
 "use client";
 
 import { useState } from "react";
-import { Clock, Coins, RefreshCw, Cpu, Copy, Check, Sparkles } from "lucide-react";
+import { Copy, Check, Sparkles } from "lucide-react";
 import { RouteResult } from "@/types/ticket";
 import { PriorityBadge } from "@/components/priority-badge";
-import { MetricTile } from "@/components/metric-tile";
 import { CATEGORY_COLOR } from "@/lib/categories";
 
-export function ResultPanel({ result }: { result: RouteResult }) {
-  const [copied, setCopied] = useState(false);
-
-  function copyJson() {
-    navigator.clipboard.writeText(JSON.stringify(result, null, 2));
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  }
-
-  const fmt = (n?: number | null, suffix = "") =>
-    n == null ? "—" : `${n}${suffix}`;
-
+// One classified ticket. A message may yield several of these, so the card is
+// self-contained: its own text, category, team, priority, and reasoning.
+function TicketCard({ ticket, index }: { ticket: RouteResult; index: number }) {
   return (
-    <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-          Classification Result
-        </h2>
-        <PriorityBadge priority={result.priority} />
+    <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-xs font-medium uppercase tracking-wide text-zinc-400">
+          Ticket {index + 1}
+        </span>
+        <PriorityBadge priority={ticket.priority} />
       </div>
 
-      {/* Category + team */}
+      {/* The slice of the message this ticket was extracted from */}
+      {ticket.text && (
+        <p className="mb-3 rounded-lg bg-zinc-50 p-2.5 text-sm italic text-zinc-600 dark:bg-zinc-800/40 dark:text-zinc-300">
+          “{ticket.text}”
+        </p>
+      )}
+
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-800/40">
           <div className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
@@ -37,9 +33,9 @@ export function ResultPanel({ result }: { result: RouteResult }) {
           <div className="mt-1 flex items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
             <span
               className="h-2.5 w-2.5 rounded-full"
-              style={{ backgroundColor: CATEGORY_COLOR[result.category] }}
+              style={{ backgroundColor: CATEGORY_COLOR[ticket.category] }}
             />
-            {result.category}
+            {ticket.category}
           </div>
         </div>
         <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-800/40">
@@ -47,38 +43,53 @@ export function ResultPanel({ result }: { result: RouteResult }) {
             Assigned Team
           </div>
           <div className="mt-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-            {result.assigned_team}
+            {ticket.assigned_team}
           </div>
         </div>
       </div>
 
-      {/* Reasoning */}
-      <div className="mt-4 rounded-lg border border-zinc-100 bg-zinc-50/50 p-3 dark:border-zinc-800 dark:bg-zinc-800/20">
+      <div className="mt-3 rounded-lg border border-zinc-100 bg-zinc-50/50 p-3 dark:border-zinc-800 dark:bg-zinc-800/20">
         <div className="mb-1 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-zinc-500">
           <Sparkles className="h-3.5 w-3.5" /> AI Reasoning
         </div>
         <p className="text-sm leading-6 text-zinc-700 dark:text-zinc-300">
-          {result.reasoning}
+          {ticket.reasoning}
         </p>
       </div>
+    </div>
+  );
+}
 
-      {/* Real metrics */}
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <MetricTile icon={Clock} label="Time" value={fmt(result.processing_time_ms, " ms")} />
-        <MetricTile icon={Coins} label="Tokens" value={fmt(result.total_tokens)} />
-        <MetricTile
-          icon={Coins}
-          label="Cost"
-          value={result.cost_usd == null ? "—" : `$${result.cost_usd.toFixed(5)}`}
-        />
-        <MetricTile icon={RefreshCw} label="Retries" value={fmt(result.retries)} />
+export function ResultPanel({ tickets }: { tickets: RouteResult[] }) {
+  const [copied, setCopied] = useState(false);
+
+  function copyJson() {
+    navigator.clipboard.writeText(JSON.stringify(tickets, null, 2));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
+
+  const count = tickets.length;
+
+  return (
+    <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+          Classification Result
+        </h2>
+        <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+          {count} {count === 1 ? "ticket" : "tickets"} found
+        </span>
       </div>
 
-      <div className="mt-4 flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-xs text-zinc-400">
-          <Cpu className="h-3.5 w-3.5" />
-          {result.model ?? "unknown model"}
-        </span>
+      {/* One card per ticket the model found in the message */}
+      <div className="space-y-3">
+        {tickets.map((ticket, i) => (
+          <TicketCard key={i} ticket={ticket} index={i} />
+        ))}
+      </div>
+
+      <div className="mt-4 flex justify-end">
         <button
           onClick={copyJson}
           className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"

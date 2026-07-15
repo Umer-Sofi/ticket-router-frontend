@@ -6,7 +6,9 @@ import { RouteResult } from "@/types/ticket";
 // Backend base URL. Comes from .env.local (NEXT_PUBLIC_ = visible to browser).
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
-export async function classifyTicket(text: string): Promise<RouteResult> {
+// Classify a message. The backend may find several tickets in one message,
+// so this returns a bare array of tickets (one entry per distinct issue).
+export async function classifyTicket(text: string): Promise<RouteResult[]> {
   const res = await fetch(`${API_URL}/api/route-ticket`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -18,7 +20,7 @@ export async function classifyTicket(text: string): Promise<RouteResult> {
     throw new Error(`Request failed with status ${res.status}`);
   }
 
-  return res.json() as Promise<RouteResult>;
+  return res.json() as Promise<RouteResult[]>;
 }
 
 // Ping the backend's /health endpoint. Used for the "API Status" indicator.
